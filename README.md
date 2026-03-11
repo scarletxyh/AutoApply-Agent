@@ -157,7 +157,7 @@ Tracks each scraping operation against a company's career portal.
 | `error_message` | `TEXT` | Error details if failed |
 | `created_at` | `TIMESTAMPTZ` | Row creation timestamp |
 
-## Docker
+## Docker (Local)
 
 ```bash
 # Run everything (app + db)
@@ -165,6 +165,68 @@ docker-compose up
 
 # Build only
 docker build -t autoapply-agent .
+```
+
+## AWS EC2 Deployment
+
+### Recommended Instance
+
+| Config | Value |
+|---|---|
+| Instance type | `t3.medium` (2 vCPU, 4GB RAM) |
+| AMI | Amazon Linux 2023 or Ubuntu 22.04 |
+| Storage | 20 GB gp3 |
+| Security group | Ports 22 (SSH), 8000 (API), 80/443 (optional) |
+
+### Option A: Auto-deploy with User Data
+
+When launching a new EC2 instance, paste the contents of [`deploy/ec2-user-data.sh`](deploy/ec2-user-data.sh) into the **User data** field. The instance will automatically install Docker, clone the repo, and start the stack on boot.
+
+After launch:
+```bash
+ssh -i your-key.pem ec2-user@YOUR_EC2_IP
+# Set your Gemini API key
+nano /opt/autoapply-agent/.env
+# Restart to pick up the key
+cd /opt/autoapply-agent && docker compose restart app
+```
+
+### Option B: Manual SSH Deployment
+
+```bash
+ssh -i your-key.pem ec2-user@YOUR_EC2_IP
+
+# Install Docker (Amazon Linux 2023)
+sudo dnf install -y docker git
+sudo systemctl enable --now docker
+sudo usermod -aG docker ec2-user
+newgrp docker
+
+# Clone and deploy
+sudo git clone https://github.com/scarletxyh/AutoApply-Agent.git /opt/autoapply-agent
+sudo chown -R ec2-user:ec2-user /opt/autoapply-agent
+cd /opt/autoapply-agent
+cp .env.example .env
+nano .env  # Set your GEMINI_API_KEY
+sed -i 's/"5433:5432"/"5432:5432"/' docker-compose.yml
+docker compose up -d --build
+```
+
+### Verify
+
+```bash
+curl http://YOUR_EC2_IP:8000/health
+# {"status": "ok"}
+```
+
+Swagger docs at `http://YOUR_EC2_IP:8000/docs`
+
+### Useful Commands
+
+```bash
+docker compose logs -f           # View logs
+docker compose restart app       # Restart after config change
+docker compose down && docker compose up -d --build  # Full rebuild
 ```
 
 ## Tech Stack
