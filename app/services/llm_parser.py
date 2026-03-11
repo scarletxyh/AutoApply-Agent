@@ -2,6 +2,7 @@
 
 import json
 import logging
+from typing import Any
 
 from google import genai
 from google.genai import types
@@ -144,13 +145,15 @@ async def parse_job_description(
 
     # Extract function call from response
     function_call = None
-    for candidate in response.candidates:
-        for part in candidate.content.parts:
-            if part.function_call:
-                function_call = part.function_call
+    if response.candidates:
+        for candidate in response.candidates:
+            if candidate.content and candidate.content.parts:
+                for part in candidate.content.parts:
+                    if part.function_call:
+                        function_call = part.function_call
+                        break
+            if function_call:
                 break
-        if function_call:
-            break
 
     if not function_call:
         logger.warning("Gemini did not return a function call, using defaults")
@@ -161,7 +164,7 @@ async def parse_job_description(
             url=url,
         )
 
-    args = dict(function_call.args)
+    args: dict[str, Any] = dict(function_call.args) if function_call.args else {}
     logger.info(f"Parsed job: {args.get('title', 'unknown')} -> {args.get('cohort', 'Other')}")
 
     # Handle nested requirements dict

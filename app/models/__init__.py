@@ -1,5 +1,19 @@
-from app.models.company import Company
-from app.models.job import Job
-from app.models.scrape_run import ScrapeRun
+"""Models package — re-exports all models and enums."""
 
-__all__ = ["Company", "Job", "ScrapeRun"]
+from app.models.models import (
+    CohortEnum,
+    Company,
+    Job,
+    ScrapeRun,
+    ScrapeStatusEnum,
+    SeniorityEnum,
+)
+
+__all__ = [
+    "CohortEnum",
+    "Company",
+    "Job",
+    "ScrapeRun",
+    "ScrapeStatusEnum",
+    "SeniorityEnum",
+]

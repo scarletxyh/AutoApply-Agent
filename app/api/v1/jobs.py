@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.db.session import get_db
-from app.models.job import CohortEnum, Job, SeniorityEnum
+from app.models import CohortEnum, Job, SeniorityEnum
 from app.schemas.job import (
     JobCreate,
     JobListResponse,

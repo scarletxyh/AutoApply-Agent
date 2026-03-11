@@ -4,7 +4,7 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
-from app.models.scrape_run import ScrapeStatusEnum
+from app.models import ScrapeStatusEnum
 
 
 class ScrapeRequest(BaseModel):

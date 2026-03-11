@@ -8,8 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import async_session_factory, get_db
-from app.models.company import Company
-from app.models.scrape_run import ScrapeRun, ScrapeStatusEnum
+from app.models import Company, ScrapeRun, ScrapeStatusEnum
 from app.schemas.scrape import ScrapeRequest, ScrapeRunResponse
 from app.services.scraper import run_scrape
 

@@ -1,10 +1,11 @@
 """Pydantic schemas for Job API requests and responses."""
 
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel
 
-from app.models.job import CohortEnum, SeniorityEnum
+from app.models import CohortEnum, SeniorityEnum
 
 
 class JobCreate(BaseModel):
@@ -15,7 +16,7 @@ class JobCreate(BaseModel):
     location: str | None = None
     description_raw: str | None = None
     description_summary: str | None = None
-    requirements: dict | None = None
+    requirements: dict[str, Any] | None = None
     cohort: CohortEnum = CohortEnum.OTHER
     seniority_level: SeniorityEnum | None = None
     salary_min: float | None = None
@@ -29,7 +30,7 @@ class JobUpdate(BaseModel):
     title: str | None = None
     location: str | None = None
     description_summary: str | None = None
-    requirements: dict | None = None
+    requirements: dict[str, Any] | None = None
     cohort: CohortEnum | None = None
     seniority_level: SeniorityEnum | None = None
     salary_min: float | None = None
@@ -48,7 +49,7 @@ class JobResponse(BaseModel):
     location: str | None = None
     description_raw: str | None = None
     description_summary: str | None = None
-    requirements: dict | None = None
+    requirements: dict[str, Any] | None = None
     cohort: CohortEnum
     seniority_level: SeniorityEnum | None = None
     salary_min: float | None = None

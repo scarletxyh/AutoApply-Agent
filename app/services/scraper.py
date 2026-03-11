@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.job import Job
+from app.models import Job
 from app.services.llm_parser import parse_job_description
 
 logger = logging.getLogger(__name__)
