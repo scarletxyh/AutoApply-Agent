@@ -1,8 +1,8 @@
 """FastAPI application entry point."""
 
 import logging
-from contextlib import asynccontextmanager
 from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,8 +11,6 @@ from app.api.v1 import companies, jobs, scrape
 from app.config import settings
 from app.db.base import Base
 from app.db.session import engine
-
-# Import models so they register with Base.metadata
 from app.models import Company, Job, ScrapeRun  # noqa: F401
 
 logging.basicConfig(

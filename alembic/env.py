@@ -3,14 +3,12 @@
 import asyncio
 from logging.config import fileConfig
 
-from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
+from alembic import context
 from app.config import settings
 from app.db.base import Base
-
-# Import all models so they register with Base.metadata
 from app.models import Company, Job, ScrapeRun  # noqa: F401
 
 config = context.config

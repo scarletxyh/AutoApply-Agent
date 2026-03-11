@@ -33,7 +33,11 @@ PARSE_JOB_FUNCTION = types.FunctionDeclaration(
             ),
             "requirements": types.Schema(
                 type=types.Type.OBJECT,
-                description="Structured requirements with keys: 'must_have' (list), 'nice_to_have' (list), 'years_experience' (string)",
+                description=(
+                    "Structured requirements with keys: "
+                    "'must_have' (list), 'nice_to_have' (list), "
+                    "'years_experience' (string)"
+                ),
                 properties={
                     "must_have": types.Schema(
                         type=types.Type.ARRAY,
@@ -53,7 +57,11 @@ PARSE_JOB_FUNCTION = types.FunctionDeclaration(
             ),
             "cohort": types.Schema(
                 type=types.Type.STRING,
-                description="Job category. Must be one of: Backend, Frontend, Fullstack, Data, ML/AI, DevOps, Testing, Embedded/Hardware, Mobile, Security, Other",
+                description=(
+                    "Job category. Must be one of: Backend, Frontend, "
+                    "Fullstack, Data, ML/AI, DevOps, Testing, "
+                    "Embedded/Hardware, Mobile, Security, Other"
+                ),
                 enum=[
                     "Backend", "Frontend", "Fullstack", "Data", "ML/AI",
                     "DevOps", "Testing", "Embedded/Hardware", "Mobile",
@@ -62,7 +70,11 @@ PARSE_JOB_FUNCTION = types.FunctionDeclaration(
             ),
             "seniority_level": types.Schema(
                 type=types.Type.STRING,
-                description="Seniority level. Must be one of: Intern, Junior, Mid, Senior, Staff, Principal, Manager, Director, VP, Other",
+                description=(
+                    "Seniority level. Must be one of: Intern, Junior, "
+                    "Mid, Senior, Staff, Principal, Manager, "
+                    "Director, VP, Other"
+                ),
                 enum=[
                     "Intern", "Junior", "Mid", "Senior", "Staff",
                     "Principal", "Manager", "Director", "VP", "Other",
@@ -99,7 +111,9 @@ SYSTEM_PROMPT = (
 )
 
 
-async def parse_job_description(raw_text: str, company_id: int, url: str | None = None) -> JobCreate:
+async def parse_job_description(
+    raw_text: str, company_id: int, url: str | None = None
+) -> JobCreate:
     """
     Parse a raw job description using Gemini function calling.
 

@@ -33,7 +33,10 @@ async def run_scrape(db: AsyncSession, company_id: int, careers_url: str) -> int
     try:
         from playwright.async_api import async_playwright
     except ImportError:
-        logger.error("Playwright is not installed. Run: pip install playwright && playwright install")
+        logger.error(
+            "Playwright is not installed. "
+            "Run: pip install playwright && playwright install"
+        )
         raise
 
     jobs_found = 0

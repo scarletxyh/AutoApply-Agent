@@ -1,6 +1,5 @@
 """API routes for triggering and monitoring scrape runs."""
 
-import asyncio
 import logging
 from datetime import datetime, timezone
 
