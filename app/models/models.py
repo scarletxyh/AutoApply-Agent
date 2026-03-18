@@ -72,20 +72,12 @@ class Company(Base):
     __tablename__ = "companies"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    name: Mapped[str] = mapped_column(
-        String(255), unique=True, nullable=False, index=True
-    )
+    name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
     careers_url: Mapped[str] = mapped_column(String(2048), nullable=False)
-    description: Mapped[str | None] = mapped_column(
-        String(1024), nullable=True
-    )
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
+    description: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    jobs: Mapped[list["Job"]] = relationship(
-        back_populates="company", cascade="all, delete-orphan"
-    )
+    jobs: Mapped[list["Job"]] = relationship(back_populates="company", cascade="all, delete-orphan")
     scrape_runs: Mapped[list["ScrapeRun"]] = relationship(
         back_populates="company", cascade="all, delete-orphan"
     )
@@ -100,25 +92,17 @@ class Job(Base):
     __tablename__ = "jobs"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    title: Mapped[str] = mapped_column(
-        String(512), nullable=False, index=True
-    )
+    title: Mapped[str] = mapped_column(String(512), nullable=False, index=True)
     company_id: Mapped[int] = mapped_column(
         Integer,
         ForeignKey("companies.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
-    location: Mapped[str | None] = mapped_column(
-        String(255), nullable=True, index=True
-    )
+    location: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
     description_raw: Mapped[str | None] = mapped_column(Text, nullable=True)
-    description_summary: Mapped[str | None] = mapped_column(
-        Text, nullable=True
-    )
-    requirements: Mapped[dict[str, Any] | None] = mapped_column(
-        JSONB, nullable=True
-    )
+    description_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+    requirements: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
     cohort: Mapped[CohortEnum] = mapped_column(
         Enum(CohortEnum, name="cohort_enum"),
         nullable=False,
@@ -131,15 +115,9 @@ class Job(Base):
     salary_min: Mapped[float | None] = mapped_column(Float, nullable=True)
     salary_max: Mapped[float | None] = mapped_column(Float, nullable=True)
     url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
-    is_active: Mapped[bool] = mapped_column(
-        Boolean, default=True, nullable=False
-    )
-    scraped_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    scraped_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
@@ -149,10 +127,7 @@ class Job(Base):
     company: Mapped[Company] = relationship(back_populates="jobs")
 
     def __repr__(self) -> str:
-        return (
-            f"<Job(id={self.id}, title='{self.title}', "
-            f"cohort='{self.cohort}')>"
-        )
+        return f"<Job(id={self.id}, title='{self.title}', cohort='{self.cohort}')>"
 
 
 class ScrapeRun(Base):
@@ -173,21 +148,16 @@ class ScrapeRun(Base):
         default=ScrapeStatusEnum.PENDING,
     )
     jobs_found: Mapped[int] = mapped_column(Integer, default=0)
-    started_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
-    finished_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     company: Mapped[Company] = relationship(back_populates="scrape_runs")
 
     def __repr__(self) -> str:
         return f"<ScrapeRun(id={self.id}, status='{self.status}')>"
+
 
 class SystemConfig(Base):
     """Global configuration settings, including the active LLM prompt."""

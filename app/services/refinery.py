@@ -3,8 +3,8 @@ from typing import Any
 
 from google import genai
 from google.genai import types
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.models import Job
@@ -13,11 +13,12 @@ from app.services.llm_parser import SYSTEM_PROMPT, tool
 
 logger = logging.getLogger(__name__)
 
+
 async def refine_job_parsing(
-    db: AsyncSession, 
-    job_id: int, 
+    db: AsyncSession,
+    job_id: int,
     prompt_override: str | None = None,
-    model_override: str | None = None
+    model_override: str | None = None,
 ) -> RefineResponse:
     """
     Re-processes a job's raw description using a refined prompt or model.
@@ -26,7 +27,7 @@ async def refine_job_parsing(
     stmt = select(Job).where(Job.id == job_id)
     result = await db.execute(stmt)
     job = result.scalar_one_or_none()
-    
+
     if not job:
         raise ValueError(f"Job with ID {job_id} not found")
 
@@ -77,5 +78,5 @@ async def refine_job_parsing(
         salary_min=args.get("salary_min"),
         salary_max=args.get("salary_max"),
         model_used=model_id,
-        prompt_used=prompt
+        prompt_used=prompt,
     )

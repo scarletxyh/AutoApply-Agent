@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.v1 import companies, jobs, scrape, refine, prompt_config
+from app.api.v1 import companies, jobs, prompt_config, refine, scrape
 from app.config import settings
 from app.db.base import Base
 from app.db.session import engine

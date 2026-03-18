@@ -26,7 +26,7 @@ async def _execute_scrape(
         stmt = select(ScrapeRun).where(ScrapeRun.id == scrape_run_id)
         result = await db.execute(stmt)
         scrape_run = result.scalar_one_or_none()
-        
+
         if not scrape_run:
             logger.error(f"Scrape run {scrape_run_id} not found in background task")
             return
@@ -62,9 +62,7 @@ async def trigger_scrape(
 ) -> ScrapeRunResponse:
     """Trigger a new scrape run for a company. Runs asynchronously in the background."""
     # Verify company exists
-    company_result = await db.execute(
-        select(Company).where(Company.id == request.company_id)
-    )
+    company_result = await db.execute(select(Company).where(Company.id == request.company_id))
     company = company_result.scalar_one_or_none()
     if not company:
         raise HTTPException(status_code=404, detail="Company not found")
@@ -84,13 +82,11 @@ async def trigger_scrape(
     # Create scrape run record
     scrape_run = ScrapeRun(company_id=request.company_id, status=ScrapeStatusEnum.PENDING)
     db.add(scrape_run)
-    await db.commit() # Commit now so background task can see it
+    await db.commit()  # Commit now so background task can see it
     await db.refresh(scrape_run)
 
     # Schedule background scrape
-    background_tasks.add_task(
-        _execute_scrape, scrape_run.id, company.id, company.careers_url
-    )
+    background_tasks.add_task(_execute_scrape, scrape_run.id, company.id, company.careers_url)
 
     return ScrapeRunResponse.model_validate(scrape_run)
 
@@ -104,19 +100,17 @@ async def trigger_scrape_url(
     """Trigger a scrape for a specific job URL."""
     # If company_id is provided, verify it
     if request.company_id:
-        company_result = await db.execute(
-            select(Company).where(Company.id == request.company_id)
-        )
+        company_result = await db.execute(select(Company).where(Company.id == request.company_id))
         if not company_result.scalar_one_or_none():
             raise HTTPException(status_code=404, detail="Company not found")
-    
+
     # Create scrape run record
     scrape_run = ScrapeRun(
-        company_id=request.company_id or 1, # Default to first company if none provided
-        status=ScrapeStatusEnum.PENDING
+        company_id=request.company_id or 1,  # Default to first company if none provided
+        status=ScrapeStatusEnum.PENDING,
     )
     db.add(scrape_run)
-    await db.commit() # Commit now so background task can see it
+    await db.commit()  # Commit now so background task can see it
     await db.refresh(scrape_run)
 
     # Schedule background scrape

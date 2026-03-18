@@ -1,15 +1,16 @@
+from typing import Any, Optional
+
 from pydantic import BaseModel, Field
-from typing import Optional, Any
+
 
 class RefineRequest(BaseModel):
     prompt_override: Optional[str] = Field(
-        None, 
-        description="Optional custom system instructions to override the default prompt."
+        None, description="Optional custom system instructions to override the default prompt."
     )
     model_override: Optional[str] = Field(
-        None, 
-        description="Optional Gemini model ID to use for this refinement."
+        None, description="Optional Gemini model ID to use for this refinement."
     )
+
 
 class RefineResponse(BaseModel):
     job_id: int

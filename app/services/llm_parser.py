@@ -6,9 +6,9 @@ from typing import Any
 
 from google import genai
 from google.genai import types
-
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.config import settings
 from app.models import SystemConfig
 from app.schemas.job import JobCreate
@@ -67,9 +67,17 @@ PARSE_JOB_FUNCTION = types.FunctionDeclaration(
                     "Embedded/Hardware, Mobile, Security, Other"
                 ),
                 enum=[
-                    "Backend", "Frontend", "Fullstack", "Data", "ML/AI",
-                    "DevOps", "Testing", "Embedded/Hardware", "Mobile",
-                    "Security", "Other",
+                    "Backend",
+                    "Frontend",
+                    "Fullstack",
+                    "Data",
+                    "ML/AI",
+                    "DevOps",
+                    "Testing",
+                    "Embedded/Hardware",
+                    "Mobile",
+                    "Security",
+                    "Other",
                 ],
             ),
             "seniority_level": types.Schema(
@@ -80,8 +88,16 @@ PARSE_JOB_FUNCTION = types.FunctionDeclaration(
                     "Director, VP, Other"
                 ),
                 enum=[
-                    "Intern", "Junior", "Mid", "Senior", "Staff",
-                    "Principal", "Manager", "Director", "VP", "Other",
+                    "Intern",
+                    "Junior",
+                    "Mid",
+                    "Senior",
+                    "Staff",
+                    "Principal",
+                    "Manager",
+                    "Director",
+                    "VP",
+                    "Other",
                 ],
             ),
             "salary_min": types.Schema(
@@ -113,38 +129,39 @@ SYSTEM_PROMPT = (
     "- Mobile: iOS, Android, React Native, Flutter\n"
     "- Security: cybersecurity, penetration testing, security engineering\n"
     "- Other: anything that doesn't fit above\n\n"
-    
     "IMPORTANT: Here is a few-shot example of how you should structure your response:\n\n"
-    
     "=== EXAMPLE INPUT ===\n"
-    "We are looking for a Software Engineer to join our core backend team. You will build scalable microservices "
-    "in Go and Python. Requirements: BS in CS, 3+ years of experience, strong understanding of PostgreSQL and AWS. "
+    "We are looking for a Software Engineer to join our core backend team. "
+    "You will build scalable microservices "
+    "in Go and Python. Requirements: BS in CS, 3+ years of experience, "
+    "strong understanding of PostgreSQL and AWS. "
     "Nice to have: experience with Kubernetes and GraphQL. Salary: $120,000 - $150,000.\n"
     "=== EXAMPLE OUTPUT ===\n"
     "{\n"
-    "  \"title\": \"Software Engineer\",\n"
-    "  \"cohort\": \"Backend\",\n"
-    "  \"seniority_level\": \"Mid\",\n"
-    "  \"salary_min\": 120000,\n"
-    "  \"salary_max\": 150000,\n"
-    "  \"description_summary\": \"Join the core backend team to build scalable microservices using Go and Python. Play a key role in architecting cloud infrastructure on AWS.\",\n"
-    "  \"requirements\": {\n"
-    "    \"must_have\": [\"Go\", \"Python\", \"PostgreSQL\", \"AWS\", \"BS in CS\"],\n"
-    "    \"nice_to_have\": [\"Kubernetes\", \"GraphQL\"],\n"
-    "    \"years_experience\": \"3+ years\"\n"
+    '  "title": "Software Engineer",\n'
+    '  "cohort": "Backend",\n'
+    '  "seniority_level": "Mid",\n'
+    '  "salary_min": 120000,\n'
+    '  "salary_max": 150000,\n'
+    '  "description_summary": "Join the core backend team to build scalable '
+    'microservices using Go and Python. Play a key role in architecting '
+    'cloud infrastructure on AWS.",\n'
+    '  "requirements": {\n'
+    '    "must_have": ["Go", "Python", "PostgreSQL", "AWS", "BS in CS"],\n'
+    '    "nice_to_have": ["Kubernetes", "GraphQL"],\n'
+    '    "years_experience": "3+ years"\n'
     "  }\n"
     "}\n\n"
-    
     "Always call the parse_job_posting function with your final analysis."
 )
 
 
 async def parse_job_description(
-    raw_text: str, 
-    company_id: int, 
+    raw_text: str,
+    company_id: int,
     db: AsyncSession,
     url: str | None = None,
-    pre_extracted_data: dict[str, Any] | None = None
+    pre_extracted_data: dict[str, Any] | None = None,
 ) -> JobCreate:
     """
     Parse a raw job description using Gemini function calling.
@@ -202,7 +219,9 @@ async def parse_job_description(
         if not function_call:
             logger.warning("Gemini did not return a function call, merging with DOM defaults")
             return JobCreate(
-                title=pre_extracted_data.get("title") if pre_extracted_data else "Untitled Position",
+                title=pre_extracted_data.get("title")
+                if pre_extracted_data
+                else "Untitled Position",
                 location=pre_extracted_data.get("location") if pre_extracted_data else None,
                 company_id=company_id,
                 description_raw=raw_text,
@@ -213,17 +232,27 @@ async def parse_job_description(
     except Exception as e:
         logger.error(f"Gemini API failed: {e}. Saving raw HTML and DOM metadata.")
         return JobCreate(
-            title=pre_extracted_data.get("title") if pre_extracted_data and pre_extracted_data.get("title") else "Untitled Position (LLM Failed)",
+            title=pre_extracted_data.get("title")
+            if pre_extracted_data and pre_extracted_data.get("title")
+            else "Untitled Position (LLM Failed)",
             location=pre_extracted_data.get("location") if pre_extracted_data else None,
             company_id=company_id,
             description_raw=raw_text,
             url=url,
-            description_summary="LLM processing failed. See raw description."
+            description_summary="LLM processing failed. See raw description.",
         )
-        
+
     # Merge LLM results with DOM data (prefer DOM for title/location if valid)
-    final_title = pre_extracted_data.get("title") if pre_extracted_data and pre_extracted_data.get("title") else args.get("title")
-    final_location = pre_extracted_data.get("location") if pre_extracted_data and pre_extracted_data.get("location") else args.get("location")
+    final_title = (
+        pre_extracted_data.get("title")
+        if pre_extracted_data and pre_extracted_data.get("title")
+        else args.get("title")
+    )
+    final_location = (
+        pre_extracted_data.get("location")
+        if pre_extracted_data and pre_extracted_data.get("location")
+        else args.get("location")
+    )
 
     requirements = args.get("requirements")
     if requirements and isinstance(requirements, str):

@@ -60,9 +60,7 @@ async def list_jobs(
 
     # Apply filters
     if query:
-        stmt = stmt.where(
-            Job.title.ilike(f"%{query}%") | Job.description_raw.ilike(f"%{query}%")
-        )
+        stmt = stmt.where(Job.title.ilike(f"%{query}%") | Job.description_raw.ilike(f"%{query}%"))
     if cohort:
         stmt = stmt.where(Job.cohort == cohort)
     if location:

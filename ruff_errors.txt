@@ -1,0 +1,145 @@
+W291 Trailing whitespace
+ --> alembic/versions/16867d038b9a_add_system_config.py:4:9
+  |
+3 | Revision ID: 16867d038b9a
+4 | Revises: 
+  |         ^
+5 | Create Date: 2026-03-13 00:11:05.862876
+6 | """
+  |
+help: Remove trailing whitespace
+
+W291 Trailing whitespace
+  --> app/api/v1/prompt_config.py:44:37
+   |
+42 | ):
+43 |     """
+44 |     Update the global system prompt. 
+   |                                     ^
+45 |     This acts as 'pre-training' by setting few-shot examples and behavioral rules 
+46 |     for all future job scrapes.
+   |
+help: Remove trailing whitespace
+
+W291 Trailing whitespace
+  --> app/api/v1/prompt_config.py:45:82
+   |
+43 |     """
+44 |     Update the global system prompt. 
+45 |     This acts as 'pre-training' by setting few-shot examples and behavioral rules 
+   |                                                                                  ^
+46 |     for all future job scrapes.
+47 |     """
+   |
+help: Remove trailing whitespace
+
+E501 Line too long (114 > 100)
+   --> app/services/llm_parser.py:120:101
+    |
+119 |     "=== EXAMPLE INPUT ===\n"
+120 |     "We are looking for a Software Engineer to join our core backend team. You will build scalable microservices "
+    |                                                                                                     ^^^^^^^^^^^^^^
+121 |     "in Go and Python. Requirements: BS in CS, 3+ years of experience, strong understanding of PostgreSQL and AWS. "
+122 |     "Nice to have: experience with Kubernetes and GraphQL. Salary: $120,000 - $150,000.\n"
+    |
+
+E501 Line too long (116 > 100)
+   --> app/services/llm_parser.py:121:101
+    |
+119 |     "=== EXAMPLE INPUT ===\n"
+120 |     "We are looking for a Software Engineer to join our core backend team. You will build scalable microservices "
+121 |     "in Go and Python. Requirements: BS in CS, 3+ years of experience, strong understanding of PostgreSQL and AWS. "
+    |                                                                                                     ^^^^^^^^^^^^^^^^
+122 |     "Nice to have: experience with Kubernetes and GraphQL. Salary: $120,000 - $150,000.\n"
+123 |     "=== EXAMPLE OUTPUT ===\n"
+    |
+
+E501 Line too long (180 > 100)
+   --> app/services/llm_parser.py:130:101
+    |
+128 | …
+129 | …
+130 | …able microservices using Go and Python. Play a key role in architecting cloud infrastructure on AWS.\",\n"
+    |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+131 | …
+132 | … in CS\"],\n"
+    |
+
+E501 Line too long (101 > 100)
+   --> app/services/llm_parser.py:205:101
+    |
+203 |             logger.warning("Gemini did not return a function call, merging with DOM defaults")
+204 |             return JobCreate(
+205 |                 title=pre_extracted_data.get("title") if pre_extracted_data else "Untitled Position",
+    |                                                                                                     ^
+206 |                 location=pre_extracted_data.get("location") if pre_extracted_data else None,
+207 |                 company_id=company_id,
+    |
+
+E501 Line too long (146 > 100)
+   --> app/services/llm_parser.py:216:101
+    |
+214 | … HTML and DOM metadata.")
+215 | …
+216 | …extracted_data and pre_extracted_data.get("title") else "Untitled Position (LLM Failed)",
+    |                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+217 | …f pre_extracted_data else None,
+218 | …
+    |
+
+E501 Line too long (130 > 100)
+   --> app/services/llm_parser.py:225:101
+    |
+224 | … for title/location if valid)
+225 | … if pre_extracted_data and pre_extracted_data.get("title") else args.get("title")
+    |                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+226 | …tion") if pre_extracted_data and pre_extracted_data.get("location") else args.get("location")
+    |
+
+E501 Line too long (142 > 100)
+   --> app/services/llm_parser.py:226:101
+    |
+224 | …itle/location if valid)
+225 | …e_extracted_data and pre_extracted_data.get("title") else args.get("title")
+226 | … if pre_extracted_data and pre_extracted_data.get("location") else args.get("location")
+    |                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+227 | …
+228 | …
+    |
+
+E501 Line too long (101 > 100)
+  --> app/services/scraper.py:22:101
+   |
+20 |         """() => {
+21 |         const getMeta = (name) => {
+22 |             return document.querySelector(`meta[property="${name}"], meta[name="${name}"]`)?.content;
+   |                                                                                                     ^
+23 |         };
+   |
+
+W291 Trailing whitespace
+  --> app/services/scraper.py:33:55
+   |
+31 |         let location = null;
+32 |         const locSelectors = [
+33 |             '[class*="location"]', '[id*="location"]', 
+   |                                                       ^
+34 |             '.job-location', '.location-icon',
+35 |             'meta[name="job_location"]'
+   |
+help: Remove trailing whitespace
+
+W293 Blank line contains whitespace
+  --> app/services/scraper.py:47:1
+   |
+45 |         // Try to find company
+46 |         let company = getMeta('og:site_name') || getMeta('application-name');
+47 |         
+   | ^^^^^^^^
+48 |         return { title, location, company };
+49 |     }"""
+   |
+help: Remove whitespace from blank line
+
+Found 13 errors.
+No fixes available (5 hidden fixes can be enabled with the `--unsafe-fixes` option).

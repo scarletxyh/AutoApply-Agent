@@ -19,7 +19,8 @@ async def extract_metadata_from_dom(page) -> dict[str, str | None]:
     return await page.evaluate(
         """() => {
         const getMeta = (name) => {
-            return document.querySelector(`meta[property="${name}"], meta[name="${name}"]`)?.content;
+            const selector = `meta[property="${name}"], meta[name="${name}"]`;
+            return document.querySelector(selector)?.content;
         };
 
         // Try to find job title
@@ -30,7 +31,7 @@ async def extract_metadata_from_dom(page) -> dict[str, str | None]:
         // Try to find location
         let location = null;
         const locSelectors = [
-            '[class*="location"]', '[id*="location"]', 
+            '[class*="location"]', '[id*="location"]',
             '.job-location', '.location-icon',
             'meta[name="job_location"]'
         ];
@@ -44,7 +45,7 @@ async def extract_metadata_from_dom(page) -> dict[str, str | None]:
 
         // Try to find company
         let company = getMeta('og:site_name') || getMeta('application-name');
-        
+
         return { title, location, company };
     }"""
     )
@@ -110,10 +111,10 @@ async def run_scrape(
 
                     # Use longer timeout and 'domcontentloaded' for robustness
                     await page.goto(job_url, wait_until="domcontentloaded", timeout=60000)
-                    
+
                     # ── Stage 1: DOM Metadata ──────────
                     dom_data = await extract_metadata_from_dom(page)
-                    
+
                     raw_text = await page.inner_text("body")
                     if len(raw_text) > 15000:
                         raw_text = raw_text[:15000]
@@ -124,7 +125,7 @@ async def run_scrape(
                         company_id=company_id,
                         db=db,
                         url=job_url,
-                        pre_extracted_data=dom_data
+                        pre_extracted_data=dom_data,
                     )
 
                     job = Job(
