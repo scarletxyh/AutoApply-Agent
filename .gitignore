@@ -34,4 +34,11 @@ htmlcov/
 .mypy_cache/
 
 # ruff
-.ruff_cache/ 
+.ruff_cache/
+
+# Sensitive files
+.env
+autoapply.pem
+
+# Temporary files
+raw_job_output.txt
