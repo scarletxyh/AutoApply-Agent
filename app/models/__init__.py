@@ -7,6 +7,7 @@ from app.models.models import (
     ScrapeRun,
     ScrapeStatusEnum,
     SeniorityEnum,
+    SystemConfig,
 )
 
 __all__ = [
@@ -16,4 +17,5 @@ __all__ = [
     "ScrapeRun",
     "ScrapeStatusEnum",
     "SeniorityEnum",
+    "SystemConfig",
 ]

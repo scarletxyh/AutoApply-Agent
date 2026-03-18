@@ -8,9 +8,16 @@ from app.models import ScrapeStatusEnum
 
 
 class ScrapeRequest(BaseModel):
-    """Schema for triggering a scrape run."""
+    """Schema for triggering a scrape run for a company."""
 
     company_id: int
+
+
+class ScrapeURLRequest(BaseModel):
+    """Schema for scraping a specific job URL."""
+
+    url: str
+    company_id: int | None = None
 
 
 class ScrapeRunResponse(BaseModel):

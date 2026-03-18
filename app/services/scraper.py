@@ -11,32 +11,59 @@ from app.services.llm_parser import parse_job_description
 logger = logging.getLogger(__name__)
 
 
-async def run_scrape(db: AsyncSession, company_id: int, careers_url: str) -> int:
+async def extract_metadata_from_dom(page) -> dict[str, str | None]:
     """
-    Scrape job listings from a company's career portal.
+    Extract basic job metadata directly from the DOM using common selectors.
+    This saves LLM tokens and increases accuracy for standard fields.
+    """
+    return await page.evaluate(
+        """() => {
+        const getMeta = (name) => {
+            return document.querySelector(`meta[property="${name}"], meta[name="${name}"]`)?.content;
+        };
 
-    This is a skeleton implementation that demonstrates the scraping pipeline:
-    1. Navigate to the careers page using Playwright
-    2. Extract job listing links
-    3. For each job, extract raw text
-    4. Parse with LLM function calling
-    5. Store in database
+        // Try to find job title
+        let title = getMeta('og:title') || getMeta('twitter:title') || document.title;
+        // Clean up common title suffixes
+        title = title.split('|')[0].split('-')[0].trim();
 
-    Args:
-        db: Async database session.
-        company_id: The company being scraped.
-        careers_url: URL of the company's careers page.
+        // Try to find location
+        let location = null;
+        const locSelectors = [
+            '[class*="location"]', '[id*="location"]', 
+            '.job-location', '.location-icon',
+            'meta[name="job_location"]'
+        ];
+        for (const sel of locSelectors) {
+            const el = document.querySelector(sel);
+            if (el && el.textContent.trim().length > 2) {
+                location = el.textContent.trim();
+                break;
+            }
+        }
 
-    Returns:
-        Number of jobs found and stored.
+        // Try to find company
+        let company = getMeta('og:site_name') || getMeta('application-name');
+        
+        return { title, location, company };
+    }"""
+    )
+
+
+async def run_scrape(
+    db: AsyncSession, company_id: int, careers_url: str, single_url: bool = False
+) -> int:
+    """
+    Scrape job listings or a single job page.
+
+    1. Navigate to the page
+    2. If single_url, process it directly.
+    3. If careers_url, find links and process each.
     """
     try:
         from playwright.async_api import async_playwright
     except ImportError:
-        logger.error(
-            "Playwright is not installed. "
-            "Run: pip install playwright && playwright install"
-        )
+        logger.error("Playwright is not installed.")
         raise
 
     jobs_found = 0
@@ -53,51 +80,53 @@ async def run_scrape(db: AsyncSession, company_id: int, careers_url: str) -> int
         page = await context.new_page()
 
         try:
-            logger.info(f"Navigating to {careers_url}")
-            await page.goto(careers_url, wait_until="networkidle", timeout=30000)
+            if single_url:
+                job_links = [{"url": careers_url, "text": "Single Job Page"}]
+            else:
+                logger.info(f"Navigating to {careers_url}")
+                await page.goto(careers_url, wait_until="networkidle", timeout=30000)
+                job_links = await page.eval_on_selector_all(
+                    "a[href]",
+                    """(elements) => {
+                        const keywords = ['job', 'position', 'career', 'opening', 'role', 'apply'];
+                        return elements
+                            .filter(el => {
+                                const href = el.href.toLowerCase();
+                                const text = el.textContent.toLowerCase();
+                                return keywords.some(kw => href.includes(kw) || text.includes(kw));
+                            })
+                            .map(el => ({ url: el.href, text: el.textContent.trim() }))
+                            .filter(item => item.text.length > 3)
+                            .slice(0, 50);
+                    }""",
+                )
 
-            # ── Step 1: Find job listing links ────────────────────────────
-            # This is a generic heuristic — real implementations would need
-            # company-specific selectors or a more sophisticated approach.
-            job_links = await page.eval_on_selector_all(
-                "a[href]",
-                """(elements) => {
-                    const keywords = ['job', 'position', 'career', 'opening', 'role', 'apply'];
-                    return elements
-                        .filter(el => {
-                            const href = el.href.toLowerCase();
-                            const text = el.textContent.toLowerCase();
-                            return keywords.some(kw => href.includes(kw) || text.includes(kw));
-                        })
-                        .map(el => ({ url: el.href, text: el.textContent.trim() }))
-                        .filter(item => item.text.length > 3)
-                        .slice(0, 50);
-                }""",
-            )
+            logger.info(f"Processing {len(job_links)} URLs")
 
-            logger.info(f"Found {len(job_links)} potential job links")
-
-            # ── Step 2: Visit each job page and extract text ──────────────
             for link in job_links:
                 try:
                     job_url = link["url"]
-                    logger.info(f"Scraping job: {link['text'][:60]}...")
+                    logger.info(f"Scraping job: {job_url}")
 
-                    await page.goto(job_url, wait_until="networkidle", timeout=20000)
+                    # Use longer timeout and 'domcontentloaded' for robustness
+                    await page.goto(job_url, wait_until="domcontentloaded", timeout=60000)
+                    
+                    # ── Stage 1: DOM Metadata ──────────
+                    dom_data = await extract_metadata_from_dom(page)
+                    
                     raw_text = await page.inner_text("body")
-
-                    # Trim excessively long text (LLM context limits)
                     if len(raw_text) > 15000:
                         raw_text = raw_text[:15000]
 
-                    # ── Step 3: Parse with LLM ────────────────────────────
+                    # ── Stage 2: Focused LLM Parse ─────
                     job_data = await parse_job_description(
                         raw_text=raw_text,
                         company_id=company_id,
+                        db=db,
                         url=job_url,
+                        pre_extracted_data=dom_data
                     )
 
-                    # ── Step 4: Store in database ─────────────────────────
                     job = Job(
                         **job_data.model_dump(),
                         scraped_at=datetime.now(timezone.utc),
@@ -105,11 +134,10 @@ async def run_scrape(db: AsyncSession, company_id: int, careers_url: str) -> int
                     db.add(job)
                     await db.flush()
                     jobs_found += 1
-
-                    logger.info(f"Stored job: {job_data.title} [{job_data.cohort}]")
+                    logger.info(f"Stored job: {job_data.title}")
 
                 except Exception as e:
-                    logger.warning(f"Failed to scrape job link {link.get('url', '?')}: {e}")
+                    logger.warning(f"Failed to scrape {link.get('url')}: {e}")
                     continue
 
             await db.commit()
@@ -117,5 +145,4 @@ async def run_scrape(db: AsyncSession, company_id: int, careers_url: str) -> int
         finally:
             await browser.close()
 
-    logger.info(f"Scrape completed: {jobs_found} jobs found")
     return jobs_found

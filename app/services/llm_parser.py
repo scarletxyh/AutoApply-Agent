@@ -7,7 +7,10 @@ from typing import Any
 from google import genai
 from google.genai import types
 
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from app.config import settings
+from app.models import SystemConfig
 from app.schemas.job import JobCreate
 
 logger = logging.getLogger(__name__)
@@ -94,6 +97,8 @@ PARSE_JOB_FUNCTION = types.FunctionDeclaration(
     ),
 )
 
+tool = types.Tool(function_declarations=[PARSE_JOB_FUNCTION])
+
 SYSTEM_PROMPT = (
     "You are a job posting parser. Given a raw job description, extract structured information "
     "using the parse_job_posting function. Be precise with cohort classification:\n"
@@ -108,66 +113,118 @@ SYSTEM_PROMPT = (
     "- Mobile: iOS, Android, React Native, Flutter\n"
     "- Security: cybersecurity, penetration testing, security engineering\n"
     "- Other: anything that doesn't fit above\n\n"
-    "Always call the parse_job_posting function with your analysis."
+    
+    "IMPORTANT: Here is a few-shot example of how you should structure your response:\n\n"
+    
+    "=== EXAMPLE INPUT ===\n"
+    "We are looking for a Software Engineer to join our core backend team. You will build scalable microservices "
+    "in Go and Python. Requirements: BS in CS, 3+ years of experience, strong understanding of PostgreSQL and AWS. "
+    "Nice to have: experience with Kubernetes and GraphQL. Salary: $120,000 - $150,000.\n"
+    "=== EXAMPLE OUTPUT ===\n"
+    "{\n"
+    "  \"title\": \"Software Engineer\",\n"
+    "  \"cohort\": \"Backend\",\n"
+    "  \"seniority_level\": \"Mid\",\n"
+    "  \"salary_min\": 120000,\n"
+    "  \"salary_max\": 150000,\n"
+    "  \"description_summary\": \"Join the core backend team to build scalable microservices using Go and Python. Play a key role in architecting cloud infrastructure on AWS.\",\n"
+    "  \"requirements\": {\n"
+    "    \"must_have\": [\"Go\", \"Python\", \"PostgreSQL\", \"AWS\", \"BS in CS\"],\n"
+    "    \"nice_to_have\": [\"Kubernetes\", \"GraphQL\"],\n"
+    "    \"years_experience\": \"3+ years\"\n"
+    "  }\n"
+    "}\n\n"
+    
+    "Always call the parse_job_posting function with your final analysis."
 )
 
 
 async def parse_job_description(
-    raw_text: str, company_id: int, url: str | None = None
+    raw_text: str, 
+    company_id: int, 
+    db: AsyncSession,
+    url: str | None = None,
+    pre_extracted_data: dict[str, Any] | None = None
 ) -> JobCreate:
     """
     Parse a raw job description using Gemini function calling.
-
-    Args:
-        raw_text: The unstructured job description text.
-        company_id: The ID of the company this job belongs to.
-        url: Optional URL of the original job posting.
-
-    Returns:
-        A JobCreate schema populated with parsed fields.
+    Optimized to focus on complex fields by providing pre-extracted metadata.
     """
     if not settings.gemini_api_key:
         raise ValueError("GEMINI_API_KEY is not configured. Set it in your .env file.")
 
     client = genai.Client(api_key=settings.gemini_api_key)
+    # tool moved to module level
 
-    tool = types.Tool(function_declarations=[PARSE_JOB_FUNCTION])
+    # Provide pre-extracted data to Gemini to avoid redundant work and reduce tokens
+    context_prefix = ""
+    if pre_extracted_data:
+        context_prefix = (
+            "Pre-extracted metadata (use as reference, but verify against text):\n"
+            f"- Title: {pre_extracted_data.get('title')}\n"
+            f"- Location: {pre_extracted_data.get('location')}\n"
+            f"- Company: {pre_extracted_data.get('company')}\n\n"
+        )
 
-    response = client.models.generate_content(
-        model=settings.gemini_model,
-        contents=f"Parse the following job posting:\n\n{raw_text}",
-        config=types.GenerateContentConfig(
-            system_instruction=SYSTEM_PROMPT,
-            tools=[tool],
-            temperature=0.1,
-        ),
-    )
+    # Fetch dynamic prompt override if it exists
+    stmt = select(SystemConfig).where(SystemConfig.key == "global_system_prompt")
+    result = await db.execute(stmt)
+    config = result.scalar_one_or_none()
+    active_prompt = config.value if config else SYSTEM_PROMPT
 
-    # Extract function call from response
-    function_call = None
-    if response.candidates:
-        for candidate in response.candidates:
-            if candidate.content and candidate.content.parts:
-                for part in candidate.content.parts:
-                    if part.function_call:
-                        function_call = part.function_call
-                        break
-            if function_call:
-                break
+    try:
+        response = client.models.generate_content(
+            model=settings.gemini_model,
+            contents=f"{context_prefix}Parse the following job posting:\n\n{raw_text}",
+            config=types.GenerateContentConfig(
+                system_instruction=(
+                    f"{active_prompt}\n"
+                    "Focus heavily on accurately capturing 'requirements' (skills) and "
+                    "synthesizing a high-quality 'description_summary'."
+                ),
+                tools=[tool],
+                temperature=0.1,
+            ),
+        )
 
-    if not function_call:
-        logger.warning("Gemini did not return a function call, using defaults")
+        # Extract function call from response
+        function_call = None
+        if response.candidates:
+            for candidate in response.candidates:
+                if candidate.content and candidate.content.parts:
+                    for part in candidate.content.parts:
+                        if part.function_call:
+                            function_call = part.function_call
+                            break
+                if function_call:
+                    break
+
+        if not function_call:
+            logger.warning("Gemini did not return a function call, merging with DOM defaults")
+            return JobCreate(
+                title=pre_extracted_data.get("title") if pre_extracted_data else "Untitled Position",
+                location=pre_extracted_data.get("location") if pre_extracted_data else None,
+                company_id=company_id,
+                description_raw=raw_text,
+                url=url,
+            )
+
+        args: dict[str, Any] = dict(function_call.args) if function_call.args else {}
+    except Exception as e:
+        logger.error(f"Gemini API failed: {e}. Saving raw HTML and DOM metadata.")
         return JobCreate(
-            title="Untitled Position",
+            title=pre_extracted_data.get("title") if pre_extracted_data and pre_extracted_data.get("title") else "Untitled Position (LLM Failed)",
+            location=pre_extracted_data.get("location") if pre_extracted_data else None,
             company_id=company_id,
             description_raw=raw_text,
             url=url,
+            description_summary="LLM processing failed. See raw description."
         )
+        
+    # Merge LLM results with DOM data (prefer DOM for title/location if valid)
+    final_title = pre_extracted_data.get("title") if pre_extracted_data and pre_extracted_data.get("title") else args.get("title")
+    final_location = pre_extracted_data.get("location") if pre_extracted_data and pre_extracted_data.get("location") else args.get("location")
 
-    args: dict[str, Any] = dict(function_call.args) if function_call.args else {}
-    logger.info(f"Parsed job: {args.get('title', 'unknown')} -> {args.get('cohort', 'Other')}")
-
-    # Handle nested requirements dict
     requirements = args.get("requirements")
     if requirements and isinstance(requirements, str):
         try:
@@ -176,9 +233,9 @@ async def parse_job_description(
             requirements = {"raw": requirements}
 
     return JobCreate(
-        title=args.get("title", "Untitled Position"),
+        title=final_title or "Untitled Position",
         company_id=company_id,
-        location=args.get("location"),
+        location=final_location,
         description_raw=raw_text,
         description_summary=args.get("description_summary"),
         requirements=requirements if isinstance(requirements, dict) else None,

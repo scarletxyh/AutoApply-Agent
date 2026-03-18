@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.v1 import companies, jobs, scrape
+from app.api.v1 import companies, jobs, scrape, refine, prompt_config
 from app.config import settings
 from app.db.base import Base
 from app.db.session import engine
@@ -56,6 +56,8 @@ app.add_middleware(
 app.include_router(jobs.router, prefix="/api/v1")
 app.include_router(companies.router, prefix="/api/v1")
 app.include_router(scrape.router, prefix="/api/v1")
+app.include_router(refine.router, prefix="/api/v1")
+app.include_router(prompt_config.router, prefix="/api/v1")
 
 
 # ── Health Check ──────────────────────────────────────────────────────────────

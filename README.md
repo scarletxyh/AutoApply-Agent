@@ -5,9 +5,10 @@ GenAI-powered job discovery tool that scrapes corporate career portals, parses j
 ## Features
 
 - **Autonomous Scraping** — Playwright-based scraper monitors career portals
-- **LLM Parsing** — Gemini function calling extracts structured data from messy descriptions
+- **Two-Stage Extraction** — Fast DOM pre-parsing combined with focused LLM analysis ensures speed and cost-efficiency
+- **Prompt Refinery & Configuration** — Built-in tools for in-context fine-tuning (Few-Shot) and iterative prompt engineering
 - **Cohort Classification** — Auto-sorts roles into Backend, Testing, Embedded/Hardware, etc.
-- **REST API** — Full CRUD with search, filtering, and pagination
+- **REST API** — Full CRUD with search, filtering, pagination, and system configuration
 - **PostgreSQL** — Robust relational storage with async support
 
 ## Quick Start
@@ -63,6 +64,11 @@ pytest tests/ -v
 | `POST` | `/api/v1/scrape` | Trigger a scrape run |
 | `GET` | `/api/v1/scrape/{id}` | Get scrape status |
 | `GET` | `/api/v1/scrape` | List scrape runs |
+| `POST` | `/api/v1/scrape/url` | Direct structured scraping for a single job URL |
+| `POST` | `/api/v1/jobs/{id}/refine` | Test prompt variations on a specific job |
+| `POST` | `/api/v1/jobs/{id}/apply-refinement` | Update job data using a refined prompt |
+| `GET` | `/api/v1/config/prompt` | Get the global few-shot system prompt |
+| `PUT` | `/api/v1/config/prompt` | Set the global few-shot system prompt |
 
 ## Database Structure
 
@@ -70,6 +76,16 @@ pytest tests/ -v
 erDiagram
     companies ||--o{ jobs : has
     companies ||--o{ scrape_runs : has
+    system_config {
+        int id PK
+        varchar key UK
+        text value
+        text description
+        timestamptz updated_at
+    }
+    alembic_version {
+        varchar version_num PK
+    }
     companies {
         int id PK
         varchar name UK
@@ -156,6 +172,26 @@ Tracks each scraping operation against a company's career portal.
 | `finished_at` | `TIMESTAMPTZ` | Scrape end time |
 | `error_message` | `TEXT` | Error details if failed |
 | `created_at` | `TIMESTAMPTZ` | Row creation timestamp |
+
+### `system_config`
+
+Global system configuration, used for "in-context fine-tuning" and prompt management.
+
+| Column | Type | Description |
+|---|---|---|
+| `id` | `SERIAL PK` | Auto-incrementing primary key |
+| `key` | `VARCHAR(255) UNIQUE` | Configuration key (e.g., `global_system_prompt`) |
+| `value` | `TEXT` | Configuration value |
+| `description` | `TEXT` | Optional description of the configuration |
+| `updated_at` | `TIMESTAMPTZ` | Last update timestamp |
+
+### `alembic_version`
+
+An internal administrative table automatically created and managed by Alembic. It stores a single row containing the version ID of the most recently applied database migration. This allows the system to track which schema updates have already been run and which are pending.
+
+| Column | Type | Description |
+|---|---|---|
+| `version_num` | `VARCHAR(32) PK` | The current database migration revision ID |
 
 ## Docker (Local)
 
