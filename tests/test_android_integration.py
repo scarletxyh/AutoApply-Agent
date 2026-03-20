@@ -9,8 +9,8 @@ Run with:
 """
 
 import os
-
 from typing import Generator
+
 import httpx
 import pytest
 
@@ -102,7 +102,9 @@ def test_scrape_url_returns_response(client: httpx.Client) -> None:
     """POST /api/v1/scrape/url should accept a URL and return a response."""
     response = client.post(
         "/api/v1/scrape/url",
-        json={"url": "https://www.google.com/about/careers/applications/jobs/results/143333237156913862-software-engineer-ii-early-career"},
+        json={
+            "url": "https://www.google.com/about/careers/applications/jobs/results/143333237156913862-software-engineer-ii-early-career"
+        },
     )
     # Accept 200, 201, or 202 — depends on backend implementation
     assert response.status_code in (200, 201, 202, 422)

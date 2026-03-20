@@ -2,6 +2,7 @@
 
 import logging
 from datetime import datetime, timezone
+from typing import TYPE_CHECKING, cast
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -9,8 +10,6 @@ from app.models import Job
 from app.services.llm_parser import parse_job_description
 
 logger = logging.getLogger(__name__)
-
-from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
     from playwright.async_api import Page
@@ -108,7 +107,7 @@ async def run_scrape(
                 )
 
             logger.info(f"Processing {len(job_links)} URLs")
-            
+
             for link in job_links:
                 try:
                     job_url = link["url"]
