@@ -144,7 +144,7 @@ SYSTEM_PROMPT = (
     '  "salary_min": 120000,\n'
     '  "salary_max": 150000,\n'
     '  "description_summary": "Join the core backend team to build scalable '
-    'microservices using Go and Python. Play a key role in architecting '
+    "microservices using Go and Python. Play a key role in architecting "
     'cloud infrastructure on AWS.",\n'
     '  "requirements": {\n'
     '    "must_have": ["Go", "Python", "PostgreSQL", "AWS", "BS in CS"],\n'
