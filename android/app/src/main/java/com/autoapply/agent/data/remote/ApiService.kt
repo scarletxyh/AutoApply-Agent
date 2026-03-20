@@ -1,0 +1,32 @@
+package com.autoapply.agent.data.remote
+
+import retrofit2.http.Body
+import retrofit2.http.GET
+import retrofit2.http.POST
+import retrofit2.http.Path
+import retrofit2.http.Query
+
+interface ApiService {
+
+    @POST("api/v1/scrape/url")
+    suspend fun scrapeUrl(@Body request: ScrapeURLRequest): ScrapeRunResponse
+
+    @GET("api/v1/scrape/{runId}")
+    suspend fun getScrapeRun(@Path("runId") runId: Int): ScrapeRunResponse
+
+    @GET("api/v1/jobs")
+    suspend fun getJobs(
+        @Query("query") query: String? = null,
+        @Query("cohort") cohort: String? = null,
+        @Query("location") location: String? = null,
+        @Query("seniority_level") seniorityLevel: String? = null,
+        @Query("company_id") companyId: Int? = null,
+        @Query("is_active") isActive: Boolean? = true,
+        @Query("min_salary") minSalary: Double? = null,
+        @Query("page") page: Int = 1,
+        @Query("page_size") pageSize: Int = 20,
+    ): JobListResponse
+
+    @GET("api/v1/jobs/{jobId}")
+    suspend fun getJob(@Path("jobId") jobId: Int): JobResponse
+}

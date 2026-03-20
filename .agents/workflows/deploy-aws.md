@@ -1,24 +1,31 @@
 ---
-description: Sync local changes to AWS and restart the Docker container
+description: Deploy local GitHub updates to the AWS server and rebuild the Docker container
 ---
 
-This workflow automates the process of pushing current local changes to the AWS EC2 instance and rebuilding the application.
+This workflow pulls the latest codebase from GitHub to the AWS EC2 instance and rebuilds the server. It replaces the legacy SCP-entire-codebase approach.
 
-1. Ensure you are in the project root on your local machine.
-// turbo
-2. Sync all local source code and configuration files to the remote instance:
+> **Note:** Use this workflow for large changes, new modules, or full syncs. For quick fixes, the agent will modify AWS directly and SCP the file back locally.
+
+1. Ensure all local changes are committed and pushed to your GitHub repository first.
 ```bash
-ssh -o ConnectTimeout=5 autoapply "mkdir -p /opt/autoapply-agent/app/schemas /opt/autoapply-agent/app/services /opt/autoapply-agent/app/api/v1" && \
-scp -r app/ main.py pyproject.toml docker-compose.yml Dockerfile .env.example autoapply:/opt/autoapply-agent/
+git add .
+git commit -m "Deploy to AWS"
+git push origin current-branch
 ```
 
 // turbo
-3. Rebuild and restart the application on AWS:
+2. Sync the `.env` configuration file to the remote instance manually, since it isn't tracked in Git:
 ```bash
-ssh autoapply "cd /opt/autoapply-agent && docker compose up -d --build"
+scp .env autoapply:/opt/autoapply-agent/
 ```
 
-4. Verify health:
+// turbo
+3. Pull the latest code from GitHub and restart the Docker container on AWS:
+```bash
+ssh autoapply "cd /opt/autoapply-agent && git fetch && git pull origin main && docker compose up -d --build"
+```
+
+4. Verify backend health dynamically:
 ```bash
 curl http://$(ssh autoapply "curl -s http://checkip.amazonaws.com"):8000/health
 ```
