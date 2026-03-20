@@ -5,6 +5,7 @@ from collections.abc import AsyncGenerator
 import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
     AsyncSession,
     async_sessionmaker,
     create_async_engine,
@@ -22,7 +23,7 @@ TEST_DATABASE_URL = settings.database_url
 
 
 @pytest.fixture(scope="function")
-async def test_engine():
+async def test_engine() -> AsyncGenerator[AsyncEngine, None]:
     """Create a fresh engine per test to avoid connection conflicts."""
     engine = create_async_engine(TEST_DATABASE_URL, echo=False)
     async with engine.begin() as conn:
@@ -34,7 +35,7 @@ async def test_engine():
 
 
 @pytest.fixture(scope="function")
-async def test_session(test_engine) -> AsyncGenerator[AsyncSession, None]:
+async def test_session(test_engine: AsyncEngine) -> AsyncGenerator[AsyncSession, None]:
     """Create a test session bound to the test engine."""
     session_factory = async_sessionmaker(test_engine, class_=AsyncSession, expire_on_commit=False)
     async with session_factory() as session:
@@ -42,7 +43,7 @@ async def test_session(test_engine) -> AsyncGenerator[AsyncSession, None]:
 
 
 @pytest.fixture(scope="function")
-async def client(test_engine) -> AsyncGenerator[AsyncClient, None]:
+async def client(test_engine: AsyncEngine) -> AsyncGenerator[AsyncClient, None]:
     """Async HTTP client with DB dependency overridden."""
     session_factory = async_sessionmaker(test_engine, class_=AsyncSession, expire_on_commit=False)
 

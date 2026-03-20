@@ -10,13 +10,18 @@ from app.services.llm_parser import parse_job_description
 
 logger = logging.getLogger(__name__)
 
+from typing import TYPE_CHECKING, cast
 
-async def extract_metadata_from_dom(page) -> dict[str, str | None]:
+if TYPE_CHECKING:
+    from playwright.async_api import Page
+
+
+async def extract_metadata_from_dom(page: "Page") -> dict[str, str | None]:
     """
     Extract basic job metadata directly from the DOM using common selectors.
     This saves LLM tokens and increases accuracy for standard fields.
     """
-    return await page.evaluate(
+    result = await page.evaluate(
         """() => {
         const getMeta = (name) => {
             const selector = `meta[property="${name}"], meta[name="${name}"]`;
@@ -49,6 +54,7 @@ async def extract_metadata_from_dom(page) -> dict[str, str | None]:
         return { title, location, company };
     }"""
     )
+    return cast(dict[str, str | None], result)
 
 
 async def run_scrape(
@@ -98,12 +104,11 @@ async def run_scrape(
                             })
                             .map(el => ({ url: el.href, text: el.textContent.trim() }))
                             .filter(item => item.text.length > 3)
-                            .slice(0, 50);
                     }""",
                 )
 
             logger.info(f"Processing {len(job_links)} URLs")
-
+            
             for link in job_links:
                 try:
                     job_url = link["url"]
