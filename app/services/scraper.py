@@ -107,6 +107,14 @@ async def run_scrape(
             for link in job_links:
                 try:
                     job_url = link["url"]
+                    
+                    # ── Stage 0: Fast Verification Bypass ──
+                    from sqlalchemy import select
+                    existing = await db.execute(select(Job).where(Job.url == job_url))
+                    if existing.scalars().first():
+                        logger.info(f"Skipping already recorded job url: {job_url}")
+                        continue
+                        
                     logger.info(f"Scraping job: {job_url}")
 
                     # Use longer timeout and 'domcontentloaded' for robustness
@@ -128,14 +136,18 @@ async def run_scrape(
                         pre_extracted_data=dom_data,
                     )
 
-                    job = Job(
+                    # ── Stage 3: Atomic PostgreSQL Insert ──
+                    from sqlalchemy.dialects.postgresql import insert
+                    
+                    stmt = insert(Job).values(
                         **job_data.model_dump(),
                         scraped_at=datetime.now(timezone.utc),
                     )
-                    db.add(job)
-                    await db.flush()
+                    stmt = stmt.on_conflict_do_nothing(index_elements=['url'])
+                    await db.execute(stmt)
+
                     jobs_found += 1
-                    logger.info(f"Stored job: {job_data.title}")
+                    logger.info(f"Successfully processed: {job_data.title}")
 
                 except Exception as e:
                     logger.warning(f"Failed to scrape {link.get('url')}: {e}")
