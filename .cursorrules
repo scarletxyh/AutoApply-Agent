@@ -1,0 +1,14 @@
+# Custom Project Rules
+
+1. **Development Branch Protocol**: 
+    - ALL Android/frontend modifications MUST be developed and committed solely on the `android-app` branch.
+    - ALL Backend modifications MUST be developed and committed solely on the `backend` branch.
+    
+2. **Merging and Pushing Protocol**:
+    - **NEVER** push directly to `main`.
+    - Before merging either branch into `main`, you MUST explicitly verify that the code has passed the automated **GitHub Actions CI**.
+    - **Check this manually every time you are about to use `git push` or `git merge`.**
+
+3. **Deployments**:
+    - The AWS server should only ever PULL from the remote repository via `git pull origin main` (after the branch successfully passes CI and is merged).
+    - Do not commit code directly on the remote AWS server to push up.
