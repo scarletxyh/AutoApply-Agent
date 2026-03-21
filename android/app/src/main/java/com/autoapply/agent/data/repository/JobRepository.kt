@@ -50,6 +50,12 @@ class JobRepository @Inject constructor(
 
     /** Clear local cache. */
     suspend fun clearCache() = jobDao.deleteAll()
+
+    /** Delete a job permanently. */
+    suspend fun deleteJob(jobId: Int) {
+        apiService.deleteJob(jobId)
+        jobDao.deleteById(jobId)
+    }
 }
 
 // ── Mapping ──────────────────────────────────────────────────────────────────

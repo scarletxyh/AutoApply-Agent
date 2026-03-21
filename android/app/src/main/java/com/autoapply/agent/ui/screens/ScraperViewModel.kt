@@ -40,7 +40,7 @@ class ScraperViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(urlError = "URL cannot be empty")
             return false
         }
-        if (!Patterns.WEB_URL.matcher(url).matches()) {
+        if (!url.startsWith("http")) {
             _uiState.value = _uiState.value.copy(urlError = "Please enter a valid URL")
             return false
         }

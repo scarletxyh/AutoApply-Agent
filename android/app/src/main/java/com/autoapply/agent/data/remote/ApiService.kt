@@ -29,4 +29,7 @@ interface ApiService {
 
     @GET("api/v1/jobs/{jobId}")
     suspend fun getJob(@Path("jobId") jobId: Int): JobResponse
+
+    @retrofit2.http.DELETE("api/v1/jobs/{jobId}")
+    suspend fun deleteJob(@Path("jobId") jobId: Int)
 }

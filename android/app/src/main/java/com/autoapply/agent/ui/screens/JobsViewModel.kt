@@ -47,4 +47,16 @@ class JobsViewModel @Inject constructor(
             }
         }
     }
+
+    fun deleteJob(jobId: Int) {
+        viewModelScope.launch {
+            try {
+                repository.deleteJob(jobId)
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    errorMessage = "Failed to permanently delete job."
+                )
+            }
+        }
+    }
 }

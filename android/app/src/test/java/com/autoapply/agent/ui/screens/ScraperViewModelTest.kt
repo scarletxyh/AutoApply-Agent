@@ -2,7 +2,7 @@ package com.autoapply.agent.ui.screens
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -22,7 +22,7 @@ import com.autoapply.agent.data.repository.JobRepository
 @OptIn(ExperimentalCoroutinesApi::class)
 class ScraperViewModelTest {
 
-    private val testDispatcher = StandardTestDispatcher()
+    private val testDispatcher = UnconfinedTestDispatcher()
     private lateinit var repository: JobRepository
     private lateinit var viewModel: ScraperViewModel
 

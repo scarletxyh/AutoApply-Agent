@@ -18,6 +18,9 @@ interface JobDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(jobs: List<JobEntity>)
 
+    @Query("DELETE FROM jobs WHERE id = :id")
+    suspend fun deleteById(id: Int)
+
     @Query("DELETE FROM jobs")
     suspend fun deleteAll()
 }

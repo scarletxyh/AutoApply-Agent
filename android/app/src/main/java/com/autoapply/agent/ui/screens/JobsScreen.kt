@@ -19,10 +19,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.Work
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -100,7 +102,11 @@ fun JobsScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 items(jobs, key = { it.id }) { job ->
-                    JobCard(job = job, onClick = { onNavigateToDetail(job.id) })
+                    JobCard(
+                        job = job,
+                        onClick = { onNavigateToDetail(job.id) },
+                        onDelete = { viewModel.deleteJob(job.id) }
+                    )
                 }
             }
         }
@@ -112,6 +118,7 @@ fun JobsScreen(
 private fun JobCard(
     job: JobEntity,
     onClick: () -> Unit,
+    onDelete: () -> Unit,
 ) {
     // Simulated match score (placeholder — would come from resume comparison)
     val matchScore = (job.title.hashCode() % 40 + 60).coerceIn(30, 95)
@@ -142,10 +149,19 @@ private fun JobCard(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
-                AssistChip(
-                    onClick = {},
-                    label = { Text(job.cohort, style = MaterialTheme.typography.labelSmall) },
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    AssistChip(
+                        onClick = {},
+                        label = { Text(job.cohort, style = MaterialTheme.typography.labelSmall) },
+                    )
+                    IconButton(onClick = onDelete) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Delete Job",
+                            tint = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(4.dp))
