@@ -18,7 +18,7 @@ PROMPT_CONFIG_KEY = "global_system_prompt"
 
 
 @router.get("/prompt", response_model=PromptConfigResponse)
-async def get_global_prompt(db: AsyncSession = Depends(get_db)):
+async def get_global_prompt(db: AsyncSession = Depends(get_db)) -> PromptConfigResponse:
     """Retrieve the current active global prompt used for LLM extraction."""
     stmt = select(SystemConfig).where(SystemConfig.key == PROMPT_CONFIG_KEY)
     result = await db.execute(stmt)
@@ -32,7 +32,7 @@ async def get_global_prompt(db: AsyncSession = Depends(get_db)):
 
 
 @router.put("/prompt", response_model=PromptConfigResponse)
-async def update_global_prompt(request: PromptConfigRequest, db: AsyncSession = Depends(get_db)):
+async def update_global_prompt(request: PromptConfigRequest, db: AsyncSession = Depends(get_db)) -> PromptConfigResponse:
     """
     Update the global system prompt.
     This acts as 'pre-training' by setting few-shot examples and behavioral rules

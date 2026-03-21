@@ -99,7 +99,7 @@ async def trigger_scrape_url(
 ) -> ScrapeRunResponse:
     """Trigger a scrape for a specific job URL."""
     company_id = request.company_id
-    
+
     # If company_id is provided, verify it
     if company_id:
         company_result = await db.execute(select(Company).where(Company.id == company_id))
@@ -112,17 +112,17 @@ async def trigger_scrape_url(
         name = domain.split(".")[0].capitalize()
         if not name:
             name = "Unknown Company"
-            
+
         # Look for existing company
         company_result = await db.execute(select(Company).where(Company.name == name))
         company = company_result.scalar_one_or_none()
-        
+
         if not company:
             # Auto-create the company
             company = Company(name=name, careers_url=f"https://{domain}")
             db.add(company)
             await db.flush()  # assign company.id
-            
+
         company_id = company.id
 
     # Create scrape run record
