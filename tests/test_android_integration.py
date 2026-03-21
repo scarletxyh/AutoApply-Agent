@@ -9,6 +9,7 @@ Run with:
 """
 
 import os
+from collections.abc import Generator
 
 import httpx
 import pytest
@@ -17,9 +18,8 @@ import pytest
 # Override with: BACKEND_URL=http://localhost:8000 pytest ...
 BASE_URL = os.environ.get("BACKEND_URL", "http://3.215.115.76:8000")
 
-
 @pytest.fixture
-def client():
+def client() -> Generator[httpx.Client, None, None]:
     """Synchronous HTTP client pointed at the live backend."""
     with httpx.Client(base_url=BASE_URL, timeout=15.0) as c:
         yield c
@@ -28,7 +28,7 @@ def client():
 # ── Health Check ──────────────────────────────────────────────────────────────
 
 
-def test_health(client: httpx.Client):
+def test_health(client: httpx.Client) -> None:
     """Backend should be reachable."""
     response = client.get("/health")
     assert response.status_code == 200
@@ -37,7 +37,7 @@ def test_health(client: httpx.Client):
 # ── Jobs Endpoints ────────────────────────────────────────────────────────────
 
 
-def test_get_jobs_returns_paginated(client: httpx.Client):
+def test_get_jobs_returns_paginated(client: httpx.Client) -> None:
     """GET /api/v1/jobs should return a paginated JobListResponse."""
     response = client.get("/api/v1/jobs")
     assert response.status_code == 200
@@ -52,13 +52,13 @@ def test_get_jobs_returns_paginated(client: httpx.Client):
     assert "pages" in data
 
 
-def test_get_job_detail_404(client: httpx.Client):
+def test_get_job_detail_404(client: httpx.Client) -> None:
     """GET /api/v1/jobs/999999 should return 404."""
     response = client.get("/api/v1/jobs/999999")
     assert response.status_code == 404
 
 
-def test_job_response_schema(client: httpx.Client):
+def test_job_response_schema(client: httpx.Client) -> None:
     """If jobs exist, validate response fields match Android ApiModels.kt."""
     response = client.get("/api/v1/jobs")
     assert response.status_code == 200
@@ -97,7 +97,7 @@ def test_job_response_schema(client: httpx.Client):
 # ── Scrape Endpoints ──────────────────────────────────────────────────────────
 
 
-def test_scrape_url_returns_response(client: httpx.Client):
+def test_scrape_url_returns_response(client: httpx.Client) -> None:
     """POST /api/v1/scrape/url should accept a URL and return a response."""
     response = client.post(
         "/api/v1/scrape/url",
@@ -114,7 +114,7 @@ def test_scrape_url_returns_response(client: httpx.Client):
         assert "created_at" in data
 
 
-def test_scrape_url_invalid_company_returns_error(client: httpx.Client):
+def test_scrape_url_invalid_company_returns_error(client: httpx.Client) -> None:
     """POST /api/v1/scrape/url with nonexistent company_id should return error."""
     response = client.post(
         "/api/v1/scrape/url",

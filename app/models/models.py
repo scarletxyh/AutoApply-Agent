@@ -125,6 +125,9 @@ class Job(Base):
     )
 
     company: Mapped[Company] = relationship(back_populates="jobs")
+    targeted_resumes: Mapped[list["Resume"]] = relationship(
+        back_populates="target_job", cascade="all, delete-orphan"
+    )
 
     def __repr__(self) -> str:
         return f"<Job(id={self.id}, title='{self.title}', cohort='{self.cohort}')>"
@@ -176,3 +179,36 @@ class SystemConfig(Base):
 
     def __repr__(self) -> str:
         return f"<SystemConfig(key='{self.key}')>"
+
+
+class Resume(Base):
+    """A user's resume, either original or polished for a specific job."""
+
+    __tablename__ = "resumes"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    content_raw: Mapped[str] = mapped_column(Text, nullable=False)
+    parsed_skills: Mapped[list[str] | None] = mapped_column(JSONB, nullable=True)
+    parsed_experience: Mapped[list[Any] | None] = mapped_column(JSONB, nullable=True)
+
+    is_original: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False, index=True)
+    target_job_id: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey("jobs.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    target_job: Mapped["Job | None"] = relationship(back_populates="targeted_resumes")
+
+    def __repr__(self) -> str:
+        return f"<Resume(id={self.id}, name='{self.name}', original={self.is_original})>"

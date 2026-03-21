@@ -274,3 +274,90 @@ async def parse_job_description(
         salary_max=args.get("salary_max"),
         url=url,
     )
+
+
+PARSE_RESUME_FUNCTION = types.FunctionDeclaration(
+    name="parse_resume_tex",
+    description="Parse a raw LaTeX resume into structured skills and experience timelines.",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "parsed_skills": types.Schema(
+                type=types.Type.ARRAY,
+                items=types.Schema(type=types.Type.STRING),
+                description="List of core professional skills, languages, and technologies.",
+            ),
+            "parsed_experience": types.Schema(
+                type=types.Type.ARRAY,
+                items=types.Schema(
+                    type=types.Type.OBJECT,
+                    properties={
+                        "company": types.Schema(type=types.Type.STRING),
+                        "role": types.Schema(type=types.Type.STRING),
+                        "duration": types.Schema(type=types.Type.STRING),
+                        "bullets": types.Schema(
+                            type=types.Type.ARRAY,
+                            items=types.Schema(type=types.Type.STRING)
+                        )
+                    }
+                ),
+                description="Chronological list of professional experience with bullet points.",
+            ),
+        },
+        required=["parsed_skills", "parsed_experience"],
+    ),
+)
+
+RESUME_SYSTEM_PROMPT = (
+    "You are an expert AI resume parser. "
+    "Given raw LaTeX (.tex) source code of a resume, extract the individual's "
+    "core 'parsed_skills' (programming languages, tools, frameworks) and "
+    "their 'parsed_experience' (companies, roles, durations, and accomplishment bullets). "
+    "Remove all LaTeX formatting commands and return only clean, readable text. "
+    "Always call the parse_resume_tex function with your structured JSON."
+)
+
+async def parse_resume_tex(raw_text: str) -> dict[str, Any]:
+    """Parse a raw LaTeX resume into structured JSON arrays via Gemini."""
+    if not settings.gemini_api_key:
+        raise ValueError("GEMINI_API_KEY is not configured.")
+
+    client = genai.Client(api_key=settings.gemini_api_key)
+    resume_tool = types.Tool(function_declarations=[PARSE_RESUME_FUNCTION])
+
+    try:
+        response = client.models.generate_content(
+            model=settings.gemini_model,
+            contents=f"Parse the following LaTeX resume into structured data:\n\n{raw_text}",
+            config=types.GenerateContentConfig(
+                system_instruction=RESUME_SYSTEM_PROMPT,
+                tools=[resume_tool],
+                temperature=0.1,
+            ),
+        )
+
+        function_call = None
+        if response.candidates:
+            for candidate in response.candidates:
+                if candidate.content and candidate.content.parts:
+                    for part in candidate.content.parts:
+                        if part.function_call:
+                            function_call = part.function_call
+                            break
+                if function_call:
+                    break
+
+        args = dict(function_call.args) if function_call and function_call.args else {}
+
+        # Safely convert protobuf representations if necessary
+        skills = args.get("parsed_skills", [])
+        experience = args.get("parsed_experience", [])
+
+        return {
+            "parsed_skills": list(skills) if hasattr(skills, '__iter__') else [],
+            "parsed_experience": list(experience) if hasattr(experience, '__iter__') else []
+        }
+    except Exception as e:
+        logger.error(f"Gemini resume parsing gracefully failed: {e}")
+        return {"parsed_skills": [], "parsed_experience": []}
+

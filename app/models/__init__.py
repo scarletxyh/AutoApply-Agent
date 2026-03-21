@@ -4,6 +4,7 @@ from app.models.models import (
     CohortEnum,
     Company,
     Job,
+    Resume,
     ScrapeRun,
     ScrapeStatusEnum,
     SeniorityEnum,
@@ -18,4 +19,5 @@ __all__ = [
     "ScrapeStatusEnum",
     "SeniorityEnum",
     "SystemConfig",
+    "Resume",
 ]

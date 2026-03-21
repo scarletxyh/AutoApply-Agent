@@ -1,3 +1,5 @@
+from typing import Any
+
 import pytest
 from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
@@ -6,7 +8,7 @@ from app.models import Job
 
 
 @pytest.mark.asyncio
-async def test_job_url_uniqueness_on_conflict_do_nothing(test_session):
+async def test_job_url_uniqueness_on_conflict_do_nothing(test_session: Any) -> None:
     """
     Test that the native PostgreSQL `on_conflict_do_nothing` perfectly prevents
     duplicate URLs from being saved, while keeping the original record intact,
