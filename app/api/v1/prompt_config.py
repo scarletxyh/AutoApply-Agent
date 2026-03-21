@@ -32,9 +32,7 @@ async def get_global_prompt(db: AsyncSession = Depends(get_db)) -> PromptConfigR
 
 
 @router.put("/prompt", response_model=PromptConfigResponse)
-async def update_global_prompt(
-    request: PromptConfigRequest, db: AsyncSession = Depends(get_db)
-) -> PromptConfigResponse:
+async def update_global_prompt(request: PromptConfigRequest, db: AsyncSession = Depends(get_db)) -> PromptConfigResponse:
     """
     Update the global system prompt.
     This acts as 'pre-training' by setting few-shot examples and behavioral rules

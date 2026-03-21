@@ -2,7 +2,6 @@
 
 import logging
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, cast
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,16 +10,15 @@ from app.services.llm_parser import parse_job_description
 
 logger = logging.getLogger(__name__)
 
-if TYPE_CHECKING:
-    from playwright.async_api import Page
 
+from typing import Any, cast
 
-async def extract_metadata_from_dom(page: "Page") -> dict[str, str | None]:
+async def extract_metadata_from_dom(page: Any) -> dict[str, str | None]:
     """
     Extract basic job metadata directly from the DOM using common selectors.
     This saves LLM tokens and increases accuracy for standard fields.
     """
-    result = await page.evaluate(
+    return cast(dict[str, str | None], await page.evaluate(
         """() => {
         const getMeta = (name) => {
             const selector = `meta[property="${name}"], meta[name="${name}"]`;
@@ -52,8 +50,7 @@ async def extract_metadata_from_dom(page: "Page") -> dict[str, str | None]:
 
         return { title, location, company };
     }"""
-    )
-    return cast(dict[str, str | None], result)
+    ))
 
 
 async def run_scrape(
@@ -103,6 +100,7 @@ async def run_scrape(
                             })
                             .map(el => ({ url: el.href, text: el.textContent.trim() }))
                             .filter(item => item.text.length > 3)
+                            .slice(0, 50);
                     }""",
                 )
 
@@ -111,6 +109,14 @@ async def run_scrape(
             for link in job_links:
                 try:
                     job_url = link["url"]
+
+                    # ── Stage 0: Fast Verification Bypass ──
+                    from sqlalchemy import select
+                    existing = await db.execute(select(Job).where(Job.url == job_url))
+                    if existing.scalars().first():
+                        logger.info(f"Skipping already recorded job url: {job_url}")
+                        continue
+
                     logger.info(f"Scraping job: {job_url}")
 
                     # Use longer timeout and 'domcontentloaded' for robustness
@@ -132,14 +138,18 @@ async def run_scrape(
                         pre_extracted_data=dom_data,
                     )
 
-                    job = Job(
+                    # ── Stage 3: Atomic PostgreSQL Insert ──
+                    from sqlalchemy.dialects.postgresql import insert
+
+                    stmt = insert(Job).values(
                         **job_data.model_dump(),
                         scraped_at=datetime.now(timezone.utc),
                     )
-                    db.add(job)
-                    await db.flush()
+                    stmt = stmt.on_conflict_do_nothing(index_elements=['url'])
+                    await db.execute(stmt)
+
                     jobs_found += 1
-                    logger.info(f"Stored job: {job_data.title}")
+                    logger.info(f"Successfully processed: {job_data.title}")
 
                 except Exception as e:
                     logger.warning(f"Failed to scrape {link.get('url')}: {e}")
