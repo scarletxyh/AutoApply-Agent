@@ -1,4 +1,5 @@
 import logging
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
@@ -6,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
 from app.models import Job
+from app.models.models import CohortEnum, SeniorityEnum
 from app.schemas.refine import RefineRequest, RefineResponse
 from app.services.refinery import refine_job_parsing
 
@@ -37,11 +39,10 @@ async def refine_job(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-from typing import Any
-from app.models.models import CohortEnum, SeniorityEnum
-
 @router.post("/{job_id}/apply-refinement", status_code=200)
-async def apply_refinement(job_id: int, request: RefineRequest, db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
+async def apply_refinement(
+    job_id: int, request: RefineRequest, db: AsyncSession = Depends(get_db)
+) -> dict[str, Any]:
     """
     Refine the job data AND save it back to the database.
     """
@@ -66,7 +67,9 @@ async def apply_refinement(job_id: int, request: RefineRequest, db: AsyncSession
         job.description_summary = refined_data.description_summary
         job.requirements = refined_data.requirements
         job.cohort = CohortEnum(refined_data.cohort) if refined_data.cohort else CohortEnum.OTHER
-        job.seniority_level = SeniorityEnum(refined_data.seniority_level) if refined_data.seniority_level else None
+        job.seniority_level = (
+            SeniorityEnum(refined_data.seniority_level) if refined_data.seniority_level else None
+        )
         job.salary_min = refined_data.salary_min
         job.salary_max = refined_data.salary_max
 

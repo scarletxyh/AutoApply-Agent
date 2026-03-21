@@ -2,6 +2,7 @@
 
 import logging
 from datetime import datetime, timezone
+from typing import Any, cast
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,8 +11,6 @@ from app.services.llm_parser import parse_job_description
 
 logger = logging.getLogger(__name__)
 
-
-from typing import Any, cast
 
 async def extract_metadata_from_dom(page: Any) -> dict[str, str | None]:
     """
