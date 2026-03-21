@@ -1,5 +1,6 @@
 package com.autoapply.agent.data.remote
 
+import okhttp3.MultipartBody
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
@@ -32,4 +33,16 @@ interface ApiService {
 
     @retrofit2.http.DELETE("api/v1/jobs/{jobId}")
     suspend fun deleteJob(@Path("jobId") jobId: Int)
+
+    // ── Resumes ────────────────────────────────────────────────────────────────
+    
+    @retrofit2.http.POST("api/v1/resumes/upload")
+    @retrofit2.http.Multipart
+    suspend fun uploadResume(@retrofit2.http.Part file: MultipartBody.Part): ResumeResponse
+
+    @GET("api/v1/resumes/")
+    suspend fun getResumes(): List<ResumeResponse>
+
+    @retrofit2.http.DELETE("api/v1/resumes/{resumeId}")
+    suspend fun deleteResume(@Path("resumeId") resumeId: Int)
 }

@@ -14,6 +14,28 @@ data class ScrapeURLRequest(
 // ── Response Models ──────────────────────────────────────────────────────────
 
 @JsonClass(generateAdapter = true)
+data class ResumeResponse(
+    val id: Int,
+    val name: String,
+    @Json(name = "content_raw") val contentRaw: String,
+    @Json(name = "parsed_skills") val parsedSkills: List<String>?,
+    @Json(name = "parsed_experience") val parsedExperience: List<ResumeExperience>?,
+    @Json(name = "is_original") val isOriginal: Boolean,
+    @Json(name = "target_job_id") val targetJobId: Int?,
+    @Json(name = "is_active") val isActive: Boolean,
+    @Json(name = "created_at") val createdAt: String,
+    @Json(name = "updated_at") val updatedAt: String,
+)
+
+@JsonClass(generateAdapter = true)
+data class ResumeExperience(
+    val company: String?,
+    val role: String?,
+    val duration: String?,
+    val bullets: List<String>?
+)
+
+@JsonClass(generateAdapter = true)
 data class ScrapeRunResponse(
     val id: Int,
     @Json(name = "company_id") val companyId: Int,
