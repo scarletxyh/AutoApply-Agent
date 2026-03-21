@@ -143,7 +143,7 @@ async def test_update_job(client: AsyncClient) -> None:
 
 @pytest.mark.asyncio
 async def test_delete_job(client: AsyncClient) -> None:
-    """Should soft-delete a job (set is_active=False)."""
+    """Should permanently hard-delete a job record."""
     company_resp = await client.post(
         "/api/v1/companies",
         json={"name": "Delete Co", "careers_url": "https://del.co/jobs"},
@@ -159,9 +159,9 @@ async def test_delete_job(client: AsyncClient) -> None:
     del_resp = await client.delete(f"/api/v1/jobs/{job_id}")
     assert del_resp.status_code == 204
 
-    # Should not appear in active jobs list
-    list_resp = await client.get("/api/v1/jobs", params={"is_active": True})
-    assert list_resp.json()["total"] == 0
+    # The record should be physically stripped (404 Not Found)
+    get_resp = await client.get(f"/api/v1/jobs/{job_id}")
+    assert get_resp.status_code == 404
 
 
 @pytest.mark.asyncio

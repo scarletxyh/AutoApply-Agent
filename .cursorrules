@@ -12,3 +12,7 @@
 3. **Deployments**:
     - The AWS server should only ever PULL from the remote repository via `git pull origin main` (after the branch successfully passes CI and is merged).
     - Do not commit code directly on the remote AWS server to push up.
+
+4. **Docker Rebuild Protocol**:
+    - When deploying new Python backend code or database schemas, **ALWAYS** explicitly rebuild the Docker container (`docker compose up -d --build app`) after executing the `git pull`. 
+    - Production containers do not use live volume mounts; the code is permanently baked into the image and will not update without the `--build` flag.

@@ -147,12 +147,12 @@ async def delete_job(
     job_id: int,
     db: AsyncSession = Depends(get_db),
 ) -> None:
-    """Soft-delete a job (marks as inactive)."""
+    """Permanently delete a job record from the database."""
     stmt = select(Job).where(Job.id == job_id)
     result = await db.execute(stmt)
     job = result.scalar_one_or_none()
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
 
-    job.is_active = False
-    await db.flush()
+    await db.delete(job)
+    await db.commit()
