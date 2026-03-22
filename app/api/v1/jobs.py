@@ -1,8 +1,9 @@
 """API routes for job CRUD and search."""
 
 import math
+from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -156,3 +157,41 @@ async def delete_job(
 
     await db.delete(job)
     await db.commit()
+
+
+@router.post("/{job_id}/apply", status_code=202)
+async def trigger_auto_apply(
+    job_id: int,
+    background_tasks: BackgroundTasks,
+    resume_id: int | None = Query(None, description="Optional ID of the parsed resume to use"),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, Any]:
+    """Trigger the continuous autonomous application agent for a job."""
+    stmt = select(Job).where(Job.id == job_id)
+    result = await db.execute(stmt)
+    job = result.scalar_one_or_none()
+
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    # Create the run tracker
+    from app.models.models import ApplicationRun, ApplicationStatusEnum
+    run = ApplicationRun(
+        job_id=job_id,
+        resume_id=resume_id,
+        status=ApplicationStatusEnum.PENDING
+    )
+    db.add(run)
+    await db.commit()
+    await db.refresh(run)
+
+    # Dispatch to background process safely natively
+    from app.services.apply_agent import execute_autonomous_apply
+    background_tasks.add_task(execute_autonomous_apply, run.id)
+
+    return {
+        "message": "Autonomous application cycle dispatched",
+        "application_run_id": run.id,
+        "status": run.status.value
+    }
+
