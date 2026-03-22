@@ -63,6 +63,16 @@ class ScrapeStatusEnum(str, enum.Enum):
     FAILED = "failed"
 
 
+class ApplicationStatusEnum(str, enum.Enum):
+    """Status of an autonomous job application run."""
+
+    PENDING = "pending"
+    RUNNING = "running"
+    SUCCESS = "success"
+    FAILED = "failed"
+    HOLD = "hold_requires_intervention"
+
+
 # ── Models ────────────────────────────────────────────────────────────────────
 
 
@@ -127,6 +137,9 @@ class Job(Base):
     company: Mapped[Company] = relationship(back_populates="jobs")
     targeted_resumes: Mapped[list["Resume"]] = relationship(
         back_populates="target_job", cascade="all, delete-orphan"
+    )
+    applications: Mapped[list["ApplicationRun"]] = relationship(
+        back_populates="job", cascade="all, delete-orphan"
     )
 
     def __repr__(self) -> str:
@@ -212,3 +225,48 @@ class Resume(Base):
 
     def __repr__(self) -> str:
         return f"<Resume(id={self.id}, name='{self.name}', original={self.is_original})>"
+
+
+class ApplicationRun(Base):
+    """Tracks an LLM/Playwright autonomous job application session."""
+
+    __tablename__ = "application_runs"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    job_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("jobs.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    resume_id: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey("resumes.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    status: Mapped[ApplicationStatusEnum] = mapped_column(
+        Enum(ApplicationStatusEnum, name="application_status_enum"),
+        nullable=False,
+        default=ApplicationStatusEnum.PENDING,
+    )
+    error_logs: Mapped[str | None] = mapped_column(Text, nullable=True)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    job: Mapped[Job] = relationship(back_populates="applications")
+
+
+class PortalCredential(Base):
+    """Stores auto-generated portal credentials (e.g. Workday accounts)."""
+
+    __tablename__ = "portal_credentials"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    domain: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    username: Mapped[str] = mapped_column(String(255), nullable=False)
+    password_encrypted: Mapped[str] = mapped_column(String(1024), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    def __repr__(self) -> str:
+        return f"<PortalCredential(domain='{self.domain}', username='{self.username}')>"
